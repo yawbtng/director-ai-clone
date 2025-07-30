@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { openai } from "@ai-sdk/openai";
+import { google } from "@ai-sdk/google";
 import { CoreMessage, generateObject, LanguageModelV1, UserContent } from "ai";
 import { z } from "zod";
 import { ObserveResult, Stagehand } from "@browserbasehq/stagehand";
 
 // Use OpenAI model via Vercel AI SDK
-const LLMClient = openai("gpt-4o");
+const LLMClient = google("gemini-2.0-flash");
 
 type Step = {
   text: string;
