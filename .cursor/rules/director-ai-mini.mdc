@@ -1,3 +1,100 @@
+---
+alwaysApply: true
+---
+
+# Project: Director-lite (Neo Scholars technical challenge)
+
+## 0. Why this project exists
+We must deliver a **minimal, end-to-end clone of Director.ai** that proves we can design a clean, reliable full-stack environment.  
+The evaluator cares about architecture, typed APIs, real-time streaming, and proper integration with Browserbase—not advanced agent intelligence.
+
+## 1. Tech stack (locked)
+- **Framework**: Next.js 14+ (App Router) with TypeScript  
+  • Use `app/` routes for UI and `app/api/*/route.ts` for server handlers  
+  • No extra Express server unless unavoidable  
+- **Browser Automation**: Browserbase Sessions + Stagehand SDK  
+- **LLM (optional)**: OpenAI function-calling to convert user prompt → JSON tool list  
+  (Hard-coded lists are acceptable for first pass)  
+- **Real-time**: **Server-Sent Events (SSE)** first; can swap to WS once core loop works  
+- **State**: In-memory maps (no DB). Queues/BullMQ only if time allows.  
+- **Tooling**: ESLint, Prettier, `tsconfig`, `.env.example`
+
+## 2. Must-deliver features (scope lock)
+| Area | Requirement |
+|------|-------------|
+| **Browserbase integration** | • Create + delete sessions programmatically <br>• Implement 4 tools: `navigate`, `click`, `type`, `screenshot` |
+| **Execution pipeline** | • POST `/api/run` with `{prompt:string}` <br>• Translate to ordered `Tool[]` (LLM or hard-code) <br>• Run tools sequentially <br>• Emit `step_started`, `step_finished`, `step_failed` events |
+| **Real-time feedback** | • `GET /api/events/:sessionId` returns SSE stream of JSON events <br>• Include base64 screenshot on `step_finished` if tool is `screenshot` |
+| **UI** | • Single page with: prompt box → “Run” button → live log list → thumbnail viewer |
+| **API layer** | • Global error handler (`src/lib/error.ts`) <br>• Structured logs with session & request IDs |
+| **Session lifecycle** | • Auto-close Browserbase session ≤ 5 min after last event or on `/api/stop/:sessionId` |
+| **Docs** | • `README.md` with quick-start, architecture diagram (+ simple ADRs) |
+
+## 3. Out-of-scope (hard stop)
+- Sophisticated planning / RAG / RL agents
+- Visual drag-and-drop workflow builder
+- Multi-tenant auth & persisted run history
+- Production-grade scaling / infra (one small Vercel-compatible deployment is fine)
+
+## 4. Domain objects
+```ts
+/** src/types/tool.ts */
+export type Tool =
+  | { kind: 'navigate'; url: string }
+  | { kind: 'click'; selector: string }
+  | { kind: 'type'; selector: string; text: string }
+  | { kind: 'screenshot' };
+```
+
+## 5. High-level flow
+1. **UI** → `POST /api/run` {prompt}.  
+2. **/api/run**:  
+   - Create Browserbase session → stagehand instance  
+   - (Option) Call OpenAI to get `Tool[]` → else use demo list  
+   - Store `{sessionId, tools}` in Map → return `{sessionId}`.  
+3. **Worker loop (same route or background)** iterates tools:  
+   - Emit `step_started` (SSE)  
+   - `await runTool(stagehand, tool)`  
+   - Emit `step_finished` (SSE, +screenshot if requested)  
+   - On error ⇒ emit `step_failed`, close session.  
+4. Client subscribes to `/api/events/:sessionId` and renders log.
+
+## 6. Suggested folder tree (feature-first)
+```
+/src
+ ├─ app/                 # Next.js App Router
+ │   ├─ page.tsx         # UI
+ │   └─ api/
+ │        run/route.ts   # POST /api/run
+ │        events/[id]/route.ts # SSE stream
+ │        stop/[id]/route.ts   # abort & cleanup
+ ├─ modules/
+ │   ├─ browser/         # Browserbase helpers
+ │   ├─ planner/         # OpenAI wrapper (optional)
+ │   └─ execution/       # runTool, event emitter
+ ├─ lib/                 # logger, error, utils
+ └─ types/               # Tool, Event, etc.
+```
+
+## 7. Key implementation notes
+- **SSE helper**: use `new TextEncoder().encode("data: ...\n\n")` and `res.write`.  
+- **Stagehand usage**:  
+  ```ts
+  const sh = new Stagehand({ connectUrl: session.wsUrl });
+  await sh.act(`navigate to ${tool.url}`);
+  ```  
+- Always wrap Stagehand calls in `try/catch` and emit `step_failed`.  
+- Add `setTimeout(cleanup, 5*60_000)` after last tool.
+
+## 8. Milestone order
+1. Scaffold Next.js, create `/api/run` returning dummy sessionId.  
+2. Add Browserbase session + `navigate google.com`.  
+3. Wire SSE; stream “hello”.  
+4. Hook Stagehand runner & real events.  
+5. Simple UI log.  
+6. Optional: LLM planner → click/type/screenshot, polish.
+
+> **Focus** on getting prompt → navigate → screenshot → streamed to UI working ASAP; layer the rest later.
 # Project: Director-lite (Neo Scholars technical challenge)
 
 ## 0. Why this project exists

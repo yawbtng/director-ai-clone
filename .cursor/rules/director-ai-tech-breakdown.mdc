@@ -1,0 +1,76 @@
+---
+alwaysApply: true
+---
+🎯 What Director.ai Is
+Director.ai is a web automation platform that converts natural language prompts into executable browser automation scripts. It's built by Browserbase and represents a breakthrough in making web automation accessible to non-programmers.
+
+Key Value Proposition:
+Input: Natural language (e.g., "Book a flight from SF to Tokyo")
+Output: Working browser automation scripts
+Execution: Runs in cloud browsers with real-time results
+
+🏗️ Architecture Overview
+Three-Layer System:
+Director - The application layer (what we're building)
+Stagehand - The browser automation SDK (like the tools I'm using)
+Browserbase - Cloud browser infrastructure
+
+📋 Implementation Plan
+Phase 1: MVP Core Features
+
+Frontend (React/Next.js)
+// Key Components:
+- ChatInterface: Natural language input with conversation history
+- ScriptViewer: Display generated Stagehand automation code
+- ExecutionPanel: Real-time status and results
+- ContextForm: URL and credential injection
+- ExportButton: Download generated scripts
+
+Backend (Next.js API Routes)
+// Core API Endpoints:
+POST /api/generate-script    // Natural language → Stagehand script
+POST /api/execute-script     // Run generated automation
+GET /api/execution-status    // Real-time execution updates
+POST /api/save-context      // Store user context (URLs, credentials)
+
+Database Schema
+-- Core tables for MVP:
+users (id, email, created_at)
+projects (id, user_id, name, description, created_at)
+scripts (id, project_id, prompt, generated_code, status)
+executions (id, script_id, status, results, started_at, completed_at)
+contexts (id, project_id, type, data) -- URLs, credentials, files
+
+Technology Stack
+Frontend: Next.js, Tailwind CSS, ShadCN
+Backend: NextJS API Routes
+Database: PostgreSQL
+LLM: Gemini-1.5-flash
+Browser Automation: Stagehand SDK
+Infrastructure: Vercel
+
+Core Services Architecture
+
+LLM Integration Service
+Converts natural language to Stagehand scripts
+Maintains context about available tools and patterns
+Handles prompt engineering for optimal script generation
+
+Script Execution Service
+Runs generated Stagehand scripts
+Manages browser sessions and cleanup
+Provides real-time execution feedback
+
+Context Management Service
+Handles user-provided URLs, credentials, files
+Injects context into script generation
+Manages secure credential storage
+
+
+User Experience Flow
+User enters natural language prompt in chat interface
+System generates Stagehand automation script using LLM
+User reviews generated script in code viewer
+User clicks execute to run script in cloud browser
+Real-time results displayed in execution panel
+User can export, save, or schedule the working script
