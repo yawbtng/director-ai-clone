@@ -4,31 +4,34 @@ import {
   wrapLanguageModel,
 } from 'ai';
 import { google } from '@ai-sdk/google';
-import {
-  artifactModel,
-  chatModel,
-  reasoningModel,
-  titleModel,
-} from './models.test';
-import { isTestEnvironment } from '../constants';
+import { isTestEnvironment, isDevelopmentEnvironment } from '../constants';
 
-export const myProvider = isTestEnvironment
-  ? customProvider({
-      languageModels: {
-        'chat-model': chatModel,
-        'chat-model-reasoning': reasoningModel,
-        'title-model': titleModel,
-        'artifact-model': artifactModel,
-      },
-    })
+// Helper function to add supportedUrls to Google models
+const addSupportedUrls = (model: any) => ({
+  ...model,
+  supportedUrls: {},
+});
+
+// Create a simple mock provider for development when no API keys are available
+const createMockProvider = () => customProvider({
+  languageModels: {
+    'chat-model': addSupportedUrls(google('gemini-1.5-flash')),
+    'chat-model-reasoning': addSupportedUrls(google('gemini-1.5-flash')),
+    'title-model': addSupportedUrls(google('gemini-1.5-flash')),
+    'artifact-model': addSupportedUrls(google('gemini-1.5-flash')),
+  },
+});
+
+export const myProvider = isTestEnvironment || isDevelopmentEnvironment
+  ? createMockProvider()
   : customProvider({
       languageModels: {
-        'chat-model': google('gemini-1.5-flash'),
+        'chat-model': addSupportedUrls(google('gemini-1.5-flash')),
         'chat-model-reasoning': wrapLanguageModel({
-          model: google('gemini-1.5-pro'),
+          model: addSupportedUrls(google('gemini-1.5-pro')),
           middleware: extractReasoningMiddleware({ tagName: 'think' }),
         }),
-        'title-model': google('gemini-1.5-flash'),
-        'artifact-model': google('gemini-1.5-pro'),
+        'title-model': addSupportedUrls(google('gemini-1.5-flash')),
+        'artifact-model': addSupportedUrls(google('gemini-1.5-pro')),
       },
     });

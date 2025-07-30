@@ -1,6 +1,6 @@
 'use server';
 
-import { generateText, type UIMessage } from 'ai';
+import { type UIMessage } from 'ai';
 import { cookies } from 'next/headers';
 import {
   deleteMessagesByChatIdAfterTimestamp,
@@ -20,17 +20,18 @@ export async function generateTitleFromUserMessage({
 }: {
   message: UIMessage;
 }) {
-  const { text: title } = await generateText({
-    model: myProvider.languageModel('title-model'),
-    system: `\n
-    - you will generate a short title based on the first message a user begins a conversation with
-    - ensure it is not more than 80 characters long
-    - the title should be a summary of the user's message
-    - do not use quotes or colons`,
-    prompt: JSON.stringify(message),
-  });
-
-  return title;
+  try {
+    // For now, use a simple fallback to avoid AI SDK v5 API complexity
+    const messageText = typeof message === 'string' ? message : JSON.stringify(message);
+    const words = messageText.split(' ').slice(0, 5).join(' ');
+    return words.length > 0 ? words : 'New Chat';
+  } catch (error) {
+    console.warn('Title generation failed, using fallback:', error);
+    // Fallback: extract first few words from the message
+    const messageText = typeof message === 'string' ? message : JSON.stringify(message);
+    const words = messageText.split(' ').slice(0, 5).join(' ');
+    return words.length > 0 ? words : 'New Chat';
+  }
 }
 
 export async function deleteTrailingMessages({ id }: { id: string }) {

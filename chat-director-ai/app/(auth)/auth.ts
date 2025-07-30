@@ -4,7 +4,6 @@ import Credentials from 'next-auth/providers/credentials';
 import { createGuestUser, getUser } from '@/lib/db/queries';
 import { authConfig } from './auth.config';
 import { DUMMY_PASSWORD } from '@/lib/constants';
-import type { DefaultJWT } from 'next-auth/jwt';
 import { db } from '@/lib/db/config';
 
 export type UserType = 'guest' | 'regular';
@@ -20,13 +19,6 @@ declare module 'next-auth' {
   interface User {
     id?: string;
     email?: string | null;
-    type: UserType;
-  }
-}
-
-declare module 'next-auth/jwt' {
-  interface JWT extends DefaultJWT {
-    id: string;
     type: UserType;
   }
 }
@@ -84,8 +76,8 @@ export const {
     },
     async session({ session, token }) {
       if (session.user) {
-        session.user.id = token.id;
-        session.user.type = token.type;
+        session.user.id = token.id as string;
+        session.user.type = token.type as UserType;
       }
 
       return session;

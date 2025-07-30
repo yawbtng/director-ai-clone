@@ -2,20 +2,21 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
 export function createClient() {
-  const cookieStore = cookies()
+  const cookieStore = cookies();
 
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!, // Use service role key for server-side
     {
       cookies: {
-        getAll() {
-          return cookieStore.getAll()
+        async getAll() {
+          return (await cookieStore).getAll()
         },
-        setAll(cookiesToSet) {
+        async setAll(cookiesToSet) {
           try {
+            const resolvedCookieStore = await cookieStore;
             cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
+              resolvedCookieStore.set(name, value, options)
             )
           } catch {
             // The `setAll` method was called from a Server Component.

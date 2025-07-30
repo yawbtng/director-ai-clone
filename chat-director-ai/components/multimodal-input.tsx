@@ -29,6 +29,21 @@ import { useScrollToBottom } from '@/hooks/use-scroll-to-bottom';
 import type { VisibilityType } from './visibility-selector';
 import type { Attachment, ChatMessage } from '@/lib/types';
 
+// Client-side only wrapper to prevent hydration mismatches
+function ClientOnly({ children }: { children: React.ReactNode }) {
+  const [hasMounted, setHasMounted] = useState(false);
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
+
+  if (!hasMounted) {
+    return null;
+  }
+
+  return <>{children}</>;
+}
+
 function PureMultimodalInput({
   chatId,
   input,
@@ -325,7 +340,11 @@ function PureMultimodalInput({
 }
 
 export const MultimodalInput = memo(
-  PureMultimodalInput,
+  (props: React.ComponentProps<typeof PureMultimodalInput>) => (
+    <ClientOnly>
+      <PureMultimodalInput {...props} />
+    </ClientOnly>
+  ),
   (prevProps, nextProps) => {
     if (prevProps.input !== nextProps.input) return false;
     if (prevProps.status !== nextProps.status) return false;
