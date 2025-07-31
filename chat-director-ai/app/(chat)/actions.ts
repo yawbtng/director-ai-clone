@@ -1,6 +1,5 @@
 'use server';
 
-import { type UIMessage } from 'ai';
 import { cookies } from 'next/headers';
 import {
   deleteMessagesByChatIdAfterTimestamp,
@@ -8,7 +7,9 @@ import {
   updateChatVisiblityById,
 } from '@/lib/db/queries';
 import type { VisibilityType } from '@/components/visibility-selector';
-import { myProvider } from '@/lib/ai/providers';
+import { getTextFromMessage } from '@/lib/utils';
+import type { ChatMessage } from '@/lib/types';
+
 
 export async function saveChatModelAsCookie(model: string) {
   const cookieStore = await cookies();
@@ -18,19 +19,15 @@ export async function saveChatModelAsCookie(model: string) {
 export async function generateTitleFromUserMessage({
   message,
 }: {
-  message: UIMessage;
+  message: ChatMessage;
 }) {
   try {
-    // For now, use a simple fallback to avoid AI SDK v5 API complexity
-    const messageText = typeof message === 'string' ? message : JSON.stringify(message);
+    const messageText = getTextFromMessage(message);
     const words = messageText.split(' ').slice(0, 5).join(' ');
     return words.length > 0 ? words : 'New Chat';
   } catch (error) {
     console.warn('Title generation failed, using fallback:', error);
-    // Fallback: extract first few words from the message
-    const messageText = typeof message === 'string' ? message : JSON.stringify(message);
-    const words = messageText.split(' ').slice(0, 5).join(' ');
-    return words.length > 0 ? words : 'New Chat';
+    return 'New Chat';
   }
 }
 

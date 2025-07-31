@@ -1,19 +1,20 @@
-import { z } from 'zod';
-import type { getWeather } from './ai/tools/get-weather';
-import type { createDocument } from './ai/tools/create-document';
-import type { updateDocument } from './ai/tools/update-document';
-import type { requestSuggestions } from './ai/tools/request-suggestions';
-import type { InferUITool, UIMessage } from 'ai';
 
-import type { ArtifactKind } from '@/components/artifact';
-import type { Suggestion } from './db/schema';
+import { type UIMessage } from 'ai/react';
+import { type InferUITool, type LanguageModelV2 } from 'ai';
+import { z } from 'zod';
+import { getWeather } from './ai/tools/get-weather';
+import { createDocument } from './ai/tools/create-document';
+import { updateDocument } from './ai/tools/update-document';
+import { requestSuggestions } from './ai/tools/request-suggestions';
+import { Suggestion } from './db/schema';
+import { ArtifactKind } from '@/components/artifact';
+import { BrowserStep } from '@/types/agent';
 
 export type DataPart = { type: 'append-message'; message: string };
 
-export const messageMetadataSchema = z.object({
-  createdAt: z.string(),
+const messageMetadataSchema = z.object({
+  tools: z.array(z.string()).optional(),
 });
-
 export type MessageMetadata = z.infer<typeof messageMetadataSchema>;
 
 type weatherTool = InferUITool<typeof getWeather>;
@@ -42,6 +43,11 @@ export type CustomUIDataTypes = {
   kind: ArtifactKind;
   clear: null;
   finish: null;
+  browser_session_started: {
+    sessionId: string;
+    sessionUrl: string;
+  };
+  agent_step: BrowserStep;
 };
 
 export type ChatMessage = UIMessage<

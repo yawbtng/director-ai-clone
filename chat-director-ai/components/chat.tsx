@@ -3,7 +3,7 @@
 import { DefaultChatTransport } from 'ai';
 import { useChat } from '@ai-sdk/react';
 import { useEffect, useState } from 'react';
-import useSWR, { useSWRConfig } from 'swr';
+import useSWR from 'swr';
 import { ChatHeader } from '@/components/chat-header';
 import type { Vote } from '@/lib/db/schema';
 import { fetcher, fetchWithErrorHandlers, generateUUID } from '@/lib/utils';
@@ -12,11 +12,9 @@ import { MultimodalInput } from './multimodal-input';
 import { Messages } from './messages';
 import type { VisibilityType } from './visibility-selector';
 import { useArtifactSelector } from '@/hooks/use-artifact';
-import { unstable_serialize } from 'swr/infinite';
-import { getChatHistoryPaginationKey } from './sidebar-history';
 import { toast } from './toast';
 import type { Session } from 'next-auth';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useChatVisibility } from '@/hooks/use-chat-visibility';
 import { useAutoResume } from '@/hooks/use-auto-resume';
 import { ChatSDKError } from '@/lib/errors';
@@ -45,8 +43,8 @@ export function Chat({
     initialVisibilityType,
   });
 
-  const { mutate } = useSWRConfig();
-  const { setDataStream } = useDataStream();
+  const { dataStream, setDataStream } = useDataStream();
+  const router = useRouter();
 
   const [input, setInput] = useState<string>('');
 
@@ -81,9 +79,6 @@ export function Chat({
     onData: (dataPart) => {
       setDataStream((ds) => (ds ? [...ds, dataPart] : []));
     },
-    onFinish: () => {
-      mutate(unstable_serialize(getChatHistoryPaginationKey));
-    },
     onError: (error) => {
       if (error instanceof ChatSDKError) {
         toast({
@@ -93,6 +88,20 @@ export function Chat({
       }
     },
   });
+
+  useEffect(() => {
+    if (dataStream) {
+      const browserSessionStart = dataStream.find(
+        (part) => part.type === 'data-browser_session_started',
+      );
+      if (browserSessionStart) {
+        const { sessionId, sessionUrl } = browserSessionStart.data;
+        router.push(
+          `/chat/${id}/browse?sessionId=${sessionId}&sessionUrl=${sessionUrl}`,
+        );
+      }
+    }
+  }, [dataStream, router, id]);
 
   const searchParams = useSearchParams();
   const query = searchParams.get('query');
