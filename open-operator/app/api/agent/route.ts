@@ -226,7 +226,7 @@ Return a URL that would be most effective for achieving this goal.`,
   const result = await generateObject({
     model: LLMClient as LanguageModelV1,
     schema: z.object({
-      url: z.string().url(),
+      url: z.string(),
       reasoning: z.string(),
     }),
     messages: [message],

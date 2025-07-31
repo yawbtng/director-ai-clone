@@ -21,6 +21,7 @@ const ppSupply = localFont({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://operator.browserbase.com'),
   title: "Open Operator",
   description: "Watch AI browse the web, for free",
   openGraph: {
